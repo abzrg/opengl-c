@@ -11,13 +11,19 @@
 #include "sds/sds.h"
 #include "utils/utils.h"
 
-void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow* window, GLuint* mode);
-void compile_shader(const GLuint shader, const sds shader_source);
-GLint shader_compiled(const GLuint shader);
-sds get_shader_info_log(const GLuint shader);
-GLint program_linked(const GLuint program);
-sds get_program_info_log(const GLuint program);
+#define global static
+#define internal static
+#define external extern
+
+internal void framebufferSizeCallback(GLFWwindow* window, int width, int height);
+internal void processInput(GLFWwindow* window, GLuint* mode);
+internal void compile_shader(const GLuint shader, const sds shader_source);
+internal GLint shader_compiled(const GLuint shader);
+internal sds get_shader_info_log(const GLuint shader);
+internal GLint program_linked(const GLuint program);
+internal sds get_program_info_log(const GLuint program);
+internal GLenum check_gl_error_(const char* filename, GLuint line);
+#define CHECK_GL_ERROR() opengl_check_error_(__FILE__, __LINE__)
 
 // --- <> --- //
 
@@ -329,13 +335,13 @@ int main(void)
 
 // --- <> --- //
 
-void framebufferSizeCallback(GLFWwindow* window, int width, int height)
+internal void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
     (void)window;
     glViewport(0, 0, width, height);
 }
 
-void processInput(GLFWwindow* window, GLuint* mode)
+internal void processInput(GLFWwindow* window, GLuint* mode)
 {
     if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -351,21 +357,21 @@ void processInput(GLFWwindow* window, GLuint* mode)
     }
 }
 
-void compile_shader(const GLuint shader, const sds shader_source)
+internal void compile_shader(const GLuint shader, const sds shader_source)
 {
     assert(shader_source);
     glShaderSource(shader, 1, (GLchar const*const*)&shader_source, NULL);
     glCompileShader(shader);
 }
 
-GLint shader_compiled(const GLuint shader)
+internal GLint shader_compiled(const GLuint shader)
 {
     GLint compile_status = 0;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compile_status);
     return compile_status;
 }
 
-sds get_shader_info_log(const GLuint shader)
+internal sds get_shader_info_log(const GLuint shader)
 {
     GLint info_log_length = 0;
     glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &info_log_length);
@@ -377,14 +383,14 @@ sds get_shader_info_log(const GLuint shader)
     return sdstrim(info_log, " \n");
 }
 
-GLint program_linked(const GLuint program)
+internal GLint program_linked(const GLuint program)
 {
     GLint link_status = 0;
     glGetProgramiv(program, GL_LINK_STATUS, &link_status);
     return link_status;
 }
 
-sds get_program_info_log(const GLuint program)
+internal sds get_program_info_log(const GLuint program)
 {
     GLint info_log_length = 0;
     glGetProgramiv(program, GL_INFO_LOG_LENGTH, &info_log_length);
@@ -394,4 +400,39 @@ sds get_program_info_log(const GLuint program)
     glGetProgramInfoLog(program, info_log_length, NULL, info_log);
 
     return sdstrim(info_log, " \n");
+}
+
+internal GLenum check_gl_error_(const char* filename, GLuint line)
+{
+    GLenum error_code = 0;
+
+    while ((error_code = glGetError()) != GL_NO_ERROR) {
+        const char* error_message = NULL;
+        switch (error_code) {
+            case GL_INVALID_ENUM:
+                error_message = "INVALID_ENUM";
+                break;
+            case GL_INVALID_VALUE:
+                error_message = "INVALID_VALUE";
+                break;
+            case GL_INVALID_OPERATION:
+                error_message = "INVALID_OPERATION";
+                break;
+            case GL_STACK_OVERFLOW:
+                error_message = "STACK_OVERFLOW";
+                break;
+            case GL_STACK_UNDERFLOW:
+                error_message = "STACK_UNDERFLOW";
+                break;
+            case GL_OUT_OF_MEMORY:
+                error_message = "OUT_OF_MEMORY";
+                break;
+            case GL_INVALID_FRAMEBUFFER_OPERATION:
+                error_message = "INVALID_FRAMEBUFFER_OPERATION";
+                break;
+        }
+        printf("%s | %s (%u)\n", error_message, filename, line);
+    }
+
+    return error_code;
 }
