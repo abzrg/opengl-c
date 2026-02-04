@@ -70,79 +70,103 @@ int main(void)
     // 7. Bind only VAO before draw calls
     // 8. Do the draw calls
 
-    // Describe the input vertices for OpenGL via Vertex array (VAO) and vertex buffer (VBO) objects
-    const GLfloat vertices[] = {
-        // Middle rectangle
+    // ---- Rectangle
+    const GLfloat vertices_rectangle[] = {
          0.50f,  0.50f, 0.0f, // 0  top right
          0.50f, -0.50f, 0.0f, // 1  bottom right
         -0.50f, -0.50f, 0.0f, // 2  bottom left
         -0.50f,  0.50f, 0.0f, // 3  top left
-
-        // Left triangle
-        -0.75f, -0.50f, 0.0f, // 4
-        -0.50f,  0.00f, 0.0f, // 5
-        -0.75f,  0.50f, 0.0f, // 6
-
-        // Right tirangle
-         0.75f, -0.50f, 0.0f, // 7
-         0.50f,  0.00f, 0.0f, // 8
-         0.75f,  0.50f, 0.0f, // 9
     };
 
-    // Note: We start from index 0!
-    GLuint indices[] = {
-        0, 1, 3, // First triangle
-        1, 2, 3, // Second triangle
-        4, 5, 6, // Third triangle
-        7, 8, 9, // Fourth triangle
+    GLuint indices_rectangle[] = {
+        0, 1, 3, // First sub triangle
+        1, 2, 3, // Second sub triangle
     };
 
-    // Note: The core profile *requires* vertex array (attribute) object (VAO). However, the
-    //       compatibility defines, by default, a VAO, with index 0.
-    // Note: After the call to `glBindVertexArray`, the corresponding VBO(s) and attribute
-    //       pointer(s) should be bound/configured and then the VAO should be unbound for later use.
-    // Note: If we only define one VAO for objects of various layout, we bind it once and will never
-    //       unbind it, and as a result, we need to bind its buffer and then configure the attribute
-    //       pointer, which can be tedious. The better alternative is to define VAO, and VBO, set
-    //       the data and attributes once per (unique) geometry, and bind the corresponding VAO when
-    //       the geometry is needed to be drawn.
-    GLuint vertex_array = 0; // VAO
-    glGenVertexArrays(1, &vertex_array);
-    glBindVertexArray(vertex_array);
+    GLuint vertex_array_rectangle = 0;
+    glGenVertexArrays(1, &vertex_array_rectangle);
+    glBindVertexArray(vertex_array_rectangle);
 
-    GLuint vertex_buffer = 0; // VBO
-    glGenBuffers(1, &vertex_buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    GLuint vertex_buffer_rectangle = 0;
+    glGenBuffers(1, &vertex_buffer_rectangle);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_rectangle);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_rectangle), vertices_rectangle, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(*vertices_rectangle), (void*)0);
 
-    // Note: Index `0` (1st argument) of the currently bound vertex array is will be bound to the
-    //       currently bound vertex buffer. This function makes the link between a VBO and a VAO.
-    //       Having made this link, we later on don't need to bind the vertex buffer or re-specity
-    //       the attributes via a call to this (`glVertexAttribPointer`) function. We only bind the
-    //       corresponding VAO.
-    // Note: Make sure the vertex shader has an input attribute for position (vec3) at the index
-    //       location 0 of the vertex array object:
-    //
-    //          layout (location = 0) in vec3 aPos;
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(*vertices), (void*)0);
+    GLuint element_buffer_rectangle = 0;
+    glGenBuffers(1, &element_buffer_rectangle);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer_rectangle);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_rectangle), indices_rectangle, GL_STATIC_DRAW);
 
-    // Note: The last element buffer object that gets bound while a VAO is bound, is stored as the
-    //       VAOs element buffer object. Binding to a VAO then also automatically binds that EBO.
-    // Note: A VAO stores the `glBindBuffer` calls when the target is `GL_ELEMENT_ARRAY_BUFFER`.
-    //       This also means it stores its unbind calls so make sure you don't unbind the element
-    //       array buffer before unbinding your VAO, otherwise it doesn't have an EBO configured.
-    GLuint element_buffer = 0; // EBO
-    glGenBuffers(1, &element_buffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
 
-    // Note: Vertex attributes are not enabled by default.
-    glEnableVertexAttribArray(0); // Enable position attribute.
-
-    // Note: Later, before draw calls it should be bound again.
-    glBindVertexArray(0); // Unbind vertex array.
+    glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // must unbound after unbounding VAO
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // ---- Left Triangle
+    const GLfloat vertices_left_triangle[] = {
+        -0.75f, -0.50f, 0.0f, // 0
+        -0.50f,  0.00f, 0.0f, // 1
+        -0.75f,  0.50f, 0.0f, // 2
+    };
+
+    const GLuint indices_left_triangle[] = {
+        0, 1, 2,
+    };
+
+    GLuint vertex_array_left_triangle = 0;
+    glGenVertexArrays(1, &vertex_array_left_triangle);
+    glBindVertexArray(vertex_array_left_triangle);
+
+    GLuint vertex_buffer_left_triangle = 0;
+    glGenBuffers(1, &vertex_buffer_left_triangle);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_left_triangle);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_left_triangle), vertices_left_triangle, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(*vertices_left_triangle), (void*)0);
+
+    GLuint element_buffer_left_triangle = 0;
+    glGenBuffers(1, &element_buffer_left_triangle);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer_left_triangle);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_left_triangle), indices_left_triangle, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // ---- Right Triangle
+    const GLfloat vertices_right_triangle[] = {
+         0.75f, -0.50f, 0.0f, // 0
+         0.50f,  0.00f, 0.0f, // 1
+         0.75f,  0.50f, 0.0f, // 2
+    };
+
+    const GLuint indices_right_triangle[] = {
+        0, 2, 1,
+    };
+
+    GLuint vertex_array_right_triangle = 0;
+    glGenVertexArrays(1, &vertex_array_right_triangle);
+    glBindVertexArray(vertex_array_right_triangle);
+
+    GLuint vertex_buffer_right_triangle = 0;
+    glGenBuffers(1, &vertex_buffer_right_triangle);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer_right_triangle);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices_right_triangle), vertices_right_triangle, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(*vertices_right_triangle), (void*)0);
+
+    GLuint element_buffer_right_triangle = 0;
+    glGenBuffers(1, &element_buffer_right_triangle);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer_right_triangle);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_right_triangle), indices_right_triangle, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 
     // -------------------------------
@@ -195,7 +219,12 @@ int main(void)
         exit(EXIT_FAILURE);
     }
 
-    // Render loop
+
+    // -----------
+    // Render Loop
+    // -----------
+
+
     GLuint mode = GL_FILL; // drawing mode: fill or wireframe
     while (!glfwWindowShouldClose(window)) {
         // Input
@@ -206,16 +235,23 @@ int main(void)
         glClear(GL_COLOR_BUFFER_BIT);
 
         glUseProgram(shader_program);
-        // Note: VBO is already baked into VAO, so no need to bind to the VBO corresponding to the
-        //       triangle.
-        glBindVertexArray(vertex_array);
-        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer);
 
+        // Draw left triangle
+        glBindVertexArray(vertex_array_left_triangle);
         glPolygonMode(GL_FRONT_AND_BACK, mode);
-        // Note: The glDrawElements function takes its indices from the EBO currently bound to the
-        //       `GL_ELEMENT_ARRAY_BUFFER` target.
-        glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0); // We want 6 indicies to draw
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
 
+        // Draw rectangle
+        glBindVertexArray(vertex_array_rectangle);
+        glPolygonMode(GL_FRONT_AND_BACK, mode);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+
+        // Draw right triangle
+        glBindVertexArray(vertex_array_right_triangle);
+        glPolygonMode(GL_FRONT_AND_BACK, mode);
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
         // Check and call events and swap the buffers
