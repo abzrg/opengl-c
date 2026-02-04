@@ -38,7 +38,7 @@ int main(void)
     const int screenHeight = 600;
     GLFWwindow* window = glfwCreateWindow(screenWidth, screenHeight, "LearnOpenGL", NULL, NULL);
     if (window == NULL) {
-        printf("Failed to create GLFW window.\n");
+        fprintf(stderr, "Failed to create GLFW window.\n");
         glfwTerminate();
         return -1;
     }
@@ -48,7 +48,9 @@ int main(void)
     // Setup GLAD
     // Load OpenGL's function symbols using GLFW's loader
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        printf("Failed to initialize GLAD.\n");
+        fprintf(stderr, "Failed to initialize GLAD.\n");
+        glfwDestroyWindow(window);
+        glfwTerminate();
         return -1;
     }
 
@@ -181,43 +183,67 @@ int main(void)
     if (!shader_compiled(vertex_shader)) {
         sds info_log = get_shader_info_log(vertex_shader);
         fprintf(stderr, "Vertex shader compilation failed: %s\n", info_log);
-
-        sdsfree(info_log);
-        sdsfree(vertex_shader_source);
         glfwTerminate();
-        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE); // Leak
     }
 
-    // Compile fragment Shader
-    const sds fragment_shader_source = read_entire_file("./shaders/fragment_shader.glsl");
-    const GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    compile_shader(fragment_shader, fragment_shader_source);
-    if (!shader_compiled(fragment_shader)) {
-        sds info_log = get_shader_info_log(fragment_shader);
+    // Compile fragment Shader (orange)
+    const sds fragment_shader_source_orange = read_entire_file("./shaders/fragment_shader_orange.glsl");
+    const GLuint fragment_shader_orange = glCreateShader(GL_FRAGMENT_SHADER);
+    compile_shader(fragment_shader_orange, fragment_shader_source_orange);
+    if (!shader_compiled(fragment_shader_orange)) {
+        sds info_log = get_shader_info_log(fragment_shader_orange);
         fprintf(stderr, "Fragment shader compilation failed: %s\n", info_log);
-
-        sdsfree(info_log);
-        sdsfree(fragment_shader_source);
+        glfwDestroyWindow(window);
         glfwTerminate();
-        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE); // Leak
     }
 
-    // Compile (combine or attach the compiled shaders) and link shader program
-    GLuint shader_program = glCreateProgram();
-    glAttachShader(shader_program, vertex_shader);
-    glAttachShader(shader_program, fragment_shader);
-    glLinkProgram(shader_program);
+    // Compile fragment Shader (yellow)
+    const sds fragment_shader_source_yellow = read_entire_file("./shaders/fragment_shader_yellow.glsl");
+    const GLuint fragment_shader_yellow = glCreateShader(GL_FRAGMENT_SHADER);
+    compile_shader(fragment_shader_yellow, fragment_shader_source_yellow);
+    if (!shader_compiled(fragment_shader_yellow)) {
+        sds info_log = get_shader_info_log(fragment_shader_yellow);
+        fprintf(stderr, "Fragment shader compilation failed: %s\n", info_log);
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        exit(EXIT_FAILURE); // Leak
+    }
 
-    if (!program_linked(shader_program)) {
-        sds info_log = get_program_info_log(shader_program);
+    // Orange shader program
+    GLuint shader_program_orange = glCreateProgram();
+    glAttachShader(shader_program_orange, vertex_shader);
+    glAttachShader(shader_program_orange, fragment_shader_orange);
+    glLinkProgram(shader_program_orange);
+
+    if (!program_linked(shader_program_orange)) {
+        sds info_log = get_program_info_log(shader_program_orange);
         fprintf(stderr, "Program link failed: %s\n", info_log);
-
-        sdsfree(info_log);
-        sdsfree(fragment_shader_source);
-        sdsfree(vertex_shader_source);
+        glfwDestroyWindow(window);
         glfwTerminate();
-        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE); // Leak
     }
+
+    glDetachShader(shader_program_orange, vertex_shader);
+    glDetachShader(shader_program_orange, fragment_shader_orange);
+
+    // Yellow shader program
+    GLuint shader_program_yellow = glCreateProgram();
+    glAttachShader(shader_program_yellow, vertex_shader);
+    glAttachShader(shader_program_yellow, fragment_shader_yellow);
+    glLinkProgram(shader_program_yellow);
+
+    if (!program_linked(shader_program_yellow)) {
+        sds info_log = get_program_info_log(shader_program_yellow);
+        fprintf(stderr, "Program link failed: %s\n", info_log);
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        exit(EXIT_FAILURE); // Leak
+    }
+
+    glDetachShader(shader_program_yellow, vertex_shader);
+    glDetachShader(shader_program_yellow, fragment_shader_yellow);
 
 
     // -----------
@@ -234,7 +260,7 @@ int main(void)
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glUseProgram(shader_program);
+        glUseProgram(shader_program_orange);
 
         // Draw left triangle
         glBindVertexArray(vertex_array_left_triangle);
@@ -242,11 +268,15 @@ int main(void)
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
+        glUseProgram(shader_program_yellow);
+
         // Draw rectangle
         glBindVertexArray(vertex_array_rectangle);
         glPolygonMode(GL_FRONT_AND_BACK, mode);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
+
+        glUseProgram(shader_program_orange);
 
         // Draw right triangle
         glBindVertexArray(vertex_array_right_triangle);
@@ -259,12 +289,39 @@ int main(void)
         glfwPollEvents();
     }
 
+
+    // -----------------
     // Release resources
+    // -----------------
+
+
+    // Source code
     sdsfree(vertex_shader_source);
+    sdsfree(fragment_shader_source_orange);
+    sdsfree(fragment_shader_source_yellow);
+
+    // Buffers: VBO, EBO, VAO
+    glDeleteVertexArrays(1, &vertex_array_left_triangle);
+    glDeleteBuffers(1, &vertex_buffer_left_triangle);
+    glDeleteBuffers(1, &element_buffer_left_triangle);
+
+    glDeleteVertexArrays(1, &vertex_array_rectangle);
+    glDeleteBuffers(1, &vertex_buffer_rectangle);
+    glDeleteBuffers(1, &element_buffer_rectangle);
+
+    glDeleteVertexArrays(1, &vertex_array_right_triangle);
+    glDeleteBuffers(1, &vertex_buffer_right_triangle);
+    glDeleteBuffers(1, &element_buffer_right_triangle);
+
+    // Shaders and programs
     glDeleteShader(vertex_shader);
-    sdsfree(fragment_shader_source);
-    glDeleteShader(fragment_shader);
-    glDeleteProgram(shader_program);
+    glDeleteShader(fragment_shader_orange);
+    glDeleteShader(fragment_shader_yellow);
+    glDeleteProgram(shader_program_orange);
+    glDeleteProgram(shader_program_yellow);
+
+    // GLFW
+    glfwDestroyWindow(window);
     glfwTerminate();
 
     return EXIT_SUCCESS;

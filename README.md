@@ -7,8 +7,11 @@ $ make
 $ ./build/main
 ```
 
-Thirdparty Dependencies:
+Third-party Dependencies:
 
 - [GLFW](https://)
 - [GLAD]()
 - [sds]() (Simple Dynamic String) library
+
+Bugs I encountered:
+- used `GLfloat` instead of `GLuint` when defining indices that were to be transferred to the EBO.
